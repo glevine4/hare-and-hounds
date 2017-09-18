@@ -79,14 +79,16 @@ public class HareAndHoundService {
         //Parse JSON input in body.
         String[] tokens = body.split("\"");
         if (tokens.length != 25 || !tokens[0].equals("{")) {
-            throw new HareAndHoundServiceException("Bad Request", 400);
+            throw new Exception(body);
+            //throw new HareAndHoundServiceException("Bad Request", 400);
         }
         Map<String, String> map = new HashMap<String, String>();
         for (int i = 1; i < 25; i += 4) {
             map.put(tokens[i], tokens[i + 2]);
             if (!tokens[i + 1].equals(":") || !tokens[i + 3].equals(",")) {
                 if (i != 21 || !tokens[i + 3].equals("}")) {
-                    throw new HareAndHoundServiceException("Bad Request", 400);
+                    throw new Exception(body);
+                    //throw new HareAndHoundServiceException("Bad Request", 400);
                 }
             }
         }
