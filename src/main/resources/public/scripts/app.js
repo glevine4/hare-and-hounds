@@ -1,97 +1,73 @@
-//-------------------------------------------------------------------------------------------------------------//
-// Code based on a tutorial by Shekhar Gulati of SparkJava at
-// https://blog.openshift.com/developing-single-page-web-applications-using-java-8-spark-mongodb-and-angularjs/
-//-------------------------------------------------------------------------------------------------------------//
+var app = (function () {
 
-var app = angular.module('todoapp', [
-    'ngCookies',
-    'ngResource',
-    'ngSanitize',
-    'ngRoute'
-]);
-
-app.config(function ($routeProvider) {
-    $routeProvider.when('/', {
-        templateUrl: 'views/list.html',
-        controller: 'ListCtrl'
-    }).when('/create', {
-        templateUrl: 'views/create.html',
-        controller: 'CreateCtrl'
-    }).when('/edit/:id', {
-        templateUrl: 'views/edit.html',
-        controller: 'EditCtrl'
-    }).otherwise({
-        redirectTo: '/'
-    })
-});
-
-app.controller('ListCtrl', function ($scope, $http, $location) {
-
-    $scope.getTodos = function() {
-        $http.get('/api/v1/todos').success(function (data) {
-            $scope.todos = data;
-        }).error(function (data, status) {
-            console.log('Error ' + data)
-        })
-    }
-
-    $scope.todoStatusChanged = function (todo) {
-        console.log(todo);
-        $http.put('/api/v1/todos/' + todo.id, todo).success(function (data) {
-            console.log('status changed');
-        }).error(function (data, status) {
-            console.log('Error ' + data)
-        })
-    }
-
-    $scope.deleteTodo = function (todo) {
-        console.log(todo);
-        $http.delete('/api/v1/todos/' + todo.id).success(function (data) {
-            console.log('Todo deleted');
-            $scope.getTodos();
-        }).error(function (data, status) {
-            console.log('Error ' + data)
-        })
-    }
-
-    $scope.getTodos();
-});
-
-app.controller('CreateCtrl', function ($scope, $http, $location) {
-    $scope.todo = {
-        done: false
+    /* Fetch the board and update the view */
+    var privateFetchAndUpdateBoard = function () {
+        appModel.fetchBoard()
+            .done(function (data) {
+                boardView.updateBoard(data);
+            }).fail(function (jqXHR) {
+                appView.updateServerResponses('fetching the board data', jqXHR.status, jqXHR.statusText, null);
+            });
     };
 
-    $scope.createTodo = function () {
-        console.log($scope.todo);
-        $scope.todo.createdOn = moment.utc().format('YYYY-MM-DD[T]HH:mm:ss[Z]');
-        $http.post('/api/v1/todos', $scope.todo).success(function (data) {
-            $location.path('/');
-        }).error(function (data, status) {
-            console.log('Error ' + data)
-        })
+    /* Fetch the state information and update the view */
+    var privateFetchAndUpdateState = function () {
+        appModel.fetchState()
+            .done(function (data) {
+                appView.updateState(appModel.getGameId(), appModel.getPieceType(), data.state);
+            }).fail(function (jqXHR) {
+                appView.updateServerResponses('fetching the game state', jqXHR.status, jqXHR.statusText, null);
+            });
+    };
+
+    //Convenience function to fetch and update both board and state
+    var privateUpdateBoardAndState = function () {
+        privateFetchAndUpdateBoard();
+        privateFetchAndUpdateState();
+    };
+
+    /* Start a new game */
+    var privateNewGame = function (type) {
+        appModel.newGame(type)
+            .done(function (data) {
+                privateUpdateBoardAndState();
+                window.setInterval(privateUpdateBoardAndState, 2000);
+                appView.clearServerResponses();
+            }).fail(function (jqXHR) {
+                appView.updateServerResponses('starting a new game', jqXHR.status, jqXHR.statusText, null);
+            })
     }
-});
 
-app.controller('EditCtrl', function ($scope, $http, $location, $routeParams) {
+    /* Join a new game */
+    var privateJoinGame = function (gameId) {
+        appModel.joinGame(gameId)
+            .done(function (data) {
+                privateUpdateBoardAndState();
+                window.setInterval(privateUpdateBoardAndState, 2000);
+                appView.clearServerResponses();
+           }).fail(function (jqXHR) {
+               appView.updateServerResponses('joining a game', jqXHR.status, jqXHR.statusText, null);
+           })
+    };
 
-    console.log($routeParams);
-    $http.get('/api/v1/todos/' + $routeParams['id']).success(function (data) {
-        $scope.todo = data;
-        console.log("Got data");
-    }).error(function (data, status) {
-        console.log('Error ' + data);
-        $scope.todo = null;
-        /* Might be useful to show some error message? */
-    })
+    /* Move a piece */
+    var privateMovePiece = function(from, to) {
+        appModel.movePiece(from, to)
+            .done(function (data) {
+                privateUpdateBoardAndState();
+                appView.clearServerResponses();
+            }).fail(function (jqXHR) {
+                appView.updateServerResponses('making a move', jqXHR.status, jqXHR.statusText, jqXHR.responseText);
+            });
+    };
 
+    //The object
+    return {
+        newGame: privateNewGame,
+        joinGame: privateJoinGame,
+        movePiece: privateMovePiece,
+        init: function() { },
+        updateBoardAndState: privateUpdateBoardAndState
+    };
 
-    $scope.updateTodo = function (todo) {
-        console.log(todo);
-        $http.put('/api/v1/todos/' + todo.id, todo).success(function (data) {
-            $location.path('/');
-        }).error(function (data, status) {
-            console.log('Error ' + data)
-        })
-    }
-});
+})();
