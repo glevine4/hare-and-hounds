@@ -171,7 +171,7 @@ public class HareAndHoundService {
             || game.getPlayerId("HOUND").equals(playerId)) {
             if (!game.nextPlayer().equals(playerId)) {
                 throw new HareAndHoundServiceException(
-                    "{ \"reason\": \"INCORRECT TURN\" }", 422);
+                    "{ \"reason\": \"INCORRECT_TURN\" }", 422);
             }
             if (!game.movePiece(fromX, fromY, toX, toY)) {
                 throw new HareAndHoundServiceException(

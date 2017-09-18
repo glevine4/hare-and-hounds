@@ -108,15 +108,15 @@ public class GameState {
             return false;
         }
 
-        // If the piece is a hound, check that it is not moving backward
-        // and that it is the hound's turn
-        if (this.board[fromX][fromY] == 1) {
-            if (fromX > toX) {
-                return false;
-            }
-            if (!"TURN_HOUND".equals(this.state)) {
-                return false;
-            }
+        // Check there is a piece there to move.
+        if (this.board[fromX][fromY] == 0) {
+            return false;
+        }
+
+        // Check that the hounds move is valid. Function added to reduce
+        // cyclomatic complexity.
+        if (!this.checkHoundMove(fromX, fromY, toX)) {
+            return false;
         }
 
         // If the piece is a hare, check that it is the hares turn.
@@ -135,6 +135,23 @@ public class GameState {
 
         // Check if any win conditions are now satisfied.
         this.updateState();
+        return true;
+    }
+
+    /**
+     * Returns true if checks passed, false if not.
+     */
+    private boolean checkHoundMove(int fromX, int fromY, int toX) {
+        // If the piece is a hound, check that it is not moving backward
+        // and that it is the hound's turn
+        if (this.board[fromX][fromY] == 1) {
+            if (fromX > toX) {
+                return false;
+            }
+            if (!"TURN_HOUND".equals(this.state)) {
+                return false;
+            }
+        }
         return true;
     }
 
