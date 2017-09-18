@@ -9,8 +9,8 @@ package com.oose2017.glevine4.hareandhound;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
+
+import com.google.gson.Gson;
 
 /**
  * A class which provides necessary functions to the controller.
@@ -76,30 +76,15 @@ public class HareAndHoundService {
      */
     public String movePiece(String gameId, String body)
         throws HareAndHoundServiceException {
-        //Parse JSON input in body.
-        String[] tokens = body.split("\"");
-        if (tokens.length != 25 || !tokens[0].equals("{")) {
-            throw new Exception(body);
-            //throw new HareAndHoundServiceException("Bad Request", 400);
-        }
-        Map<String, String> map = new HashMap<String, String>();
-        for (int i = 1; i < 25; i += 4) {
-            map.put(tokens[i], tokens[i + 2]);
-            if (!tokens[i + 1].equals(":") || !tokens[i + 3].equals(",")) {
-                if (i != 21 || !tokens[i + 3].equals("}")) {
-                    throw new Exception(body);
-                    //throw new HareAndHoundServiceException("Bad Request", 400);
-                }
-            }
-        }
+        Move move = new Gson().fromJson(body, Move.class);
         //Find the game with gameId and call move to move the piece.
         for (GameState game : this.games) {
             if (gameId.equals(game.getGameId())) {
-                return this.move(game, map.get("playerId"),
-                    Integer.parseInt(map.get("fromX")),
-                    Integer.parseInt(map.get("fromY")),
-                    Integer.parseInt(map.get("toX")),
-                    Integer.parseInt(map.get("toY")));
+                return this.move(game, move.getPlayerId(),
+                    Integer.parseInt(move.getFromX()),
+                    Integer.parseInt(move.getFromY()),
+                    Integer.parseInt(move.getToX()),
+                    Integer.parseInt(move.getToY()));
             }
         }
         throw new HareAndHoundServiceException(
